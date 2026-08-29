@@ -1,0 +1,29 @@
+# Python
+backend/.venv/
+backend/__pycache__/
+backend/**/*.py[cod]
+backend/*.db
+backend/*.sqlite*
+.venv/
+**/__pycache__/
+*.db
+*.sqlite
+*.sqlite3
+.env
+.env.*
+
+# Node / builds
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+dist/
+build/
+
+# Editor and OS
+.vscode/
+.idea/
+*.log
+*.pem
+*.key
+.DS_Store
+Thumbs.db
