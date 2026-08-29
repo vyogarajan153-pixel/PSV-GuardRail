@@ -247,8 +247,4 @@ This project demonstrates foundational SOC concepts and full-stack development s
 
 **Waleed Alharbi**
 
-Information Technology Graduate
-
-Saudi Arabia
-
 [GitHub Profile](https://github.com/Waleed-Alharbi)
