@@ -12,7 +12,7 @@ Base.metadata.create_all(bind=engine)
 from .database import SessionLocal
 with SessionLocal() as seed_session: seed_database(seed_session)
 app = FastAPI(title="PSV GuardRail API", version="1.1.0", description="Explainable security triage and guarded incident-response previews.")
-app.add_middleware(CORSMiddleware, allow_origin_regex=r"^http://(localhost|127\.0\.0\.1):517[3-9]$", allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=False, allow_methods=["*"], allow_headers=["*"])
 
 def find(db, model, item_id):
     obj = db.get(model, item_id)
