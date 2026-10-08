@@ -6,7 +6,7 @@ import './styles.css';
 import './command-center.css';
 import CommandCenterApp from './CommandCenterApp.jsx';
 
-const API=(import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
+const API=(import.meta.env.VITE_API_URL || 'https://psv-guardrail.onrender.com/api').replace(/\/$/, '');
 const nav=[['Overview','LayoutDashboard'],['Security Alerts','ShieldAlert'],['Incidents','Siren'],['Events','ListTree'],['Endpoints','MonitorCog'],['Network','Network'],['Threat Intelligence','Crosshair'],['Reports','BarChart3'],['Settings','Settings']];
 const pageFromHash=()=>({alerts:'Security Alerts',incidents:'Incidents',events:'Events',endpoints:'Endpoints',network:'Network',intel:'Threat Intelligence',reports:'Reports',settings:'Settings'})[window.location.hash.slice(1)]||'Overview';
 const pageHash=(page)=>({Overview:'', 'Security Alerts':'alerts',Incidents:'incidents',Events:'events',Endpoints:'endpoints',Network:'network','Threat Intelligence':'intel',Reports:'reports',Settings:'settings'})[page];
