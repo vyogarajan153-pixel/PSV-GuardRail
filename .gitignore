@@ -27,3 +27,6 @@ build/
 *.key
 .DS_Store
 Thumbs.db
+
+# Local upgrade backups
+*.psv-backup

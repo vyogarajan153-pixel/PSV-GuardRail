@@ -34,6 +34,22 @@ export default function CommandCenterApp(){
   const [selectedNode,setSelectedNode] = useState(null);
   const [clock,setClock] = useState(new Date());
   const [streamOffset,setStreamOffset] = useState(0);
+  const [selectedResponse,setSelectedResponse] = useState(null);
+  const [responseComplete,setResponseComplete] = useState(false);
+  const [responseLedger,setResponseLedger] = useState([]);
+  const prepareResponse = alert => {setSelectedResponse(alert);setResponseComplete(false);};
+  const recordDryRun = () => {
+    if(!selectedResponse) return;
+    setResponseLedger(items=>[{
+      id: `${Date.now()}-${selectedResponse.id}`,
+      timestamp: new Date().toISOString(),
+      alertId: selectedResponse.id,
+      alertType: selectedResponse.alert_type,
+      risk: riskScore(selectedResponse),
+      mode: 'DRY RUN — NO SYSTEM CHANGES'
+    },...items].slice(0,10));
+    setResponseComplete(true);
+  };
 
   const load = async () => {
     setLoading(true); setError('');
@@ -73,14 +89,15 @@ export default function CommandCenterApp(){
         {mode==='Intel' && <Intelligence data={data}/>}
         {mode==='Reports' && <Reports data={data}/>}
       </main>}
-    {selectedAlert && <InvestigationDrawer alert={selectedAlert} close={()=>setSelectedAlert(null)} action={updateAlert}/>}
+    {selectedAlert && <InvestigationDrawer alert={selectedAlert} close={()=>setSelectedAlert(null)} action={updateAlert} prepareContainment={prepareResponse}/>}
+    {selectedResponse && <ResponsePreview alert={selectedResponse} complete={responseComplete} ledger={responseLedger} onRun={recordDryRun} onClose={()=>setSelectedResponse(null)}/> }
   </div>
 }
 
 function StatusBar({data,clock}){
   const cards=data.stats?.cards||{};
   return <header className="status-bar">
-    <div className="cc-brand"><span className="cc-mark"><Icons.ShieldCheck size={19}/></span><div><strong>SENTINEL<span>IQ</span></strong><small>SECURITY OPERATIONS</small></div></div>
+    <div className="cc-brand"><span className="cc-mark"><Icons.ShieldCheck size={19}/></span><div><strong className="psv-wordmark">PSV<span> GUARDRAIL</span></strong><small>SECURITY OPERATIONS</small></div></div>
     <div className="ops-state"><i/><div><small>SOC STATUS</small><b>OPERATIONAL</b></div></div>
     <div className="status-metrics">
       <StatusMetric label="EVENTS / MIN" value="24.8" trend="LIVE"/>
@@ -88,7 +105,7 @@ function StatusBar({data,clock}){
       <StatusMetric label="ENDPOINTS" value={cards.endpoints??'—'} suffix="/ 20"/>
       <StatusMetric label="UTC +03" value={clock.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false})} mono/>
     </div>
-    <button className="analyst-chip"><span>WA</span><div><b>Waleed Alharbi</b><small>SOC Analyst · Tier 1</small></div><Icons.ChevronDown size={14}/></button>
+    <button className="analyst-chip"><span>PSV</span><div><b>PSV Analyst</b><small>Security Operations</small></div><Icons.ChevronDown size={14}/></button>
   </header>
 }
 function StatusMetric({label,value,suffix,trend,attention}){return <div className={`status-metric ${attention?'attention':''}`}><small>{label}</small><b>{value} {suffix&&<em>{suffix}</em>}</b>{trend&&<span>{trend}</span>}</div>}
@@ -145,7 +162,7 @@ function AlertQueue({data,investigate}){
   const alerts=(data.alerts||[]).filter(a=>(severity==='All'||a.severity===severity)&&(!query||Object.values(a).join(' ').toLowerCase().includes(query.toLowerCase())));
   return <div className="mode-page"><PageTitle overline="TRIAGE WORKSPACE" title="Alert queue" text="Prioritized detections ready for analyst review." count={`${alerts.length} DETECTIONS`}/><div className="queue-toolbar"><div className="severity-tabs">{['All','Critical','High','Medium','Low'].map(value=><button className={severity===value?'active':''} onClick={()=>setSeverity(value)} key={value}>{value.toUpperCase()}<span>{value==='All'?data.alerts.length:data.alerts.filter(a=>a.severity===value).length}</span></button>)}</div><label><Icons.Search size={14}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search IP, host, detection…"/></label></div><section className="alert-queue">{alerts.map(alert=><article className="queue-row" key={alert.id}><div className="severity-rail" style={{background:SEVERITY[alert.severity]}}/><div className="queue-id"><small>{id('ALT',alert.id)}</small><time>{timeOnly(alert.timestamp)}</time></div><div className="queue-detection"><div><b style={{color:SEVERITY[alert.severity]}}>{alert.severity.toUpperCase()}</b><span>{alert.status}</span><span className="technique">SIM MAPPING · T1110</span></div><h3>{alert.alert_type}</h3><p>{alert.description}</p></div><div className="queue-route"><small>SOURCE</small><b>{alert.source_ip}</b><Icons.ArrowRight size={15}/><small>TARGET</small><b>{alert.destination}</b></div><div className="queue-context"><span><Icons.UserRound size={12}/>{alert.user}</span><span><Icons.Monitor size={12}/>{alert.host}</span></div><button onClick={()=>investigate(alert)}>INVESTIGATE <Icons.ChevronRight size={14}/></button></article>)}</section></div>
 }
-function InvestigationDrawer({alert,close,action}){
+function InvestigationDrawer({alert,close,action,prepareContainment}){
   const timeline=[
     ['-05m','Multiple failed authentication attempts','Authentication sensor'],
     ['-03m',`Account targeted: ${alert.user}`,'Identity telemetry'],
@@ -153,7 +170,10 @@ function InvestigationDrawer({alert,close,action}){
     ['-01m',`Connection from ${alert.source_ip}`,'Network sensor'],
     ['NOW','SOC detection generated','SentinelIQ rule engine'],
   ];
-  return <div className="drawer-backdrop" onMouseDown={close}><aside className="investigation-drawer" onMouseDown={e=>e.stopPropagation()}><header><div><small>INVESTIGATION / {id('ALT',alert.id)}</small><h2>{alert.alert_type}</h2></div><button onClick={close}><Icons.X size={18}/></button></header><div className="investigation-status"><span style={{color:SEVERITY[alert.severity]}}><i style={{background:SEVERITY[alert.severity]}}/>{alert.severity.toUpperCase()}</span><span>{alert.status.toUpperCase()}</span><time>{shortDate(alert.timestamp)}</time></div><section className="case-summary"><p>{alert.description}</p><div className="case-grid"><CaseFact label="SOURCE IP" value={alert.source_ip}/><CaseFact label="DESTINATION" value={alert.destination}/><CaseFact label="USER" value={alert.user}/><CaseFact label="ENDPOINT" value={alert.host}/></div></section><section className="timeline"><div className="drawer-section-title"><span>INCIDENT TIMELINE</span><small>SIMULATED CORRELATION</small></div>{timeline.map(([time,title,source],index)=><div className={`timeline-entry ${index===timeline.length-1?'current':''}`} key={title}><time>{time}</time><i/><div><b>{title}</b><small>{source}</small></div></div>)}</section><section className="detection-box"><div className="drawer-section-title"><span>DETECTION RATIONALE</span></div><p>{alert.detection_reason}</p><small>Educational technique mapping: Credential Access / Brute Force (simulated only)</small></section><section className="response-box"><Icons.Lightbulb size={15}/><div><b>RECOMMENDED RESPONSE</b><p>{alert.recommended_response}</p></div></section><footer><button onClick={()=>action('Investigating')}><Icons.Check size={14}/>ACKNOWLEDGE</button><button onClick={()=>action('Investigating')} className="active"><Icons.ScanSearch size={14}/>INVESTIGATE</button><button onClick={()=>action('Contained')} className="contain"><Icons.ShieldBan size={14}/>CONTAIN</button><button onClick={()=>action('Investigating')}><Icons.ArrowUpRight size={14}/>ESCALATE</button><button onClick={()=>action('Resolved')}><Icons.CircleCheck size={14}/>RESOLVE</button></footer></aside></div>
+  return <div className="drawer-backdrop" onMouseDown={close}><aside className="investigation-drawer" onMouseDown={e=>e.stopPropagation()}><header><div><small>INVESTIGATION / {id('ALT',alert.id)}</small><h2>{alert.alert_type}</h2></div><button onClick={close}><Icons.X size={18}/></button></header><div className="investigation-status"><span style={{color:SEVERITY[alert.severity]}}><i style={{background:SEVERITY[alert.severity]}}/>{alert.severity.toUpperCase()}</span><span>{alert.status.toUpperCase()}</span><time>{shortDate(alert.timestamp)}</time></div><section className="case-summary"><p>{alert.description}</p><div className="case-grid"><CaseFact label="SOURCE IP" value={alert.source_ip}/><CaseFact label="DESTINATION" value={alert.destination}/><CaseFact label="USER" value={alert.user}/><CaseFact label="ENDPOINT" value={alert.host}/></div></section><section className="risk-assessment">
+      <div className="risk-score"><small>EXPLAINABLE RISK</small><strong>{riskScore(alert)}<span>/100</span></strong><i><b style={{width:`${riskScore(alert)}%`}}/></i></div>
+      <div className="risk-reasons"><b>WHY THIS SCORE?</b>{riskReasons(alert).map(reason=><p key={reason}><Icons.CheckCircle2 size={13}/>{reason}</p>)}</div>
+    </section><section className="timeline"><div className="drawer-section-title"><span>INCIDENT TIMELINE</span><small>SIMULATED CORRELATION</small></div>{timeline.map(([time,title,source],index)=><div className={`timeline-entry ${index===timeline.length-1?'current':''}`} key={title}><time>{time}</time><i/><div><b>{title}</b><small>{source}</small></div></div>)}</section><section className="detection-box"><div className="drawer-section-title"><span>DETECTION RATIONALE</span></div><p>{alert.detection_reason}</p><small>Educational technique mapping: Credential Access / Brute Force (simulated only)</small></section><section className="response-box"><Icons.Lightbulb size={15}/><div><b>RECOMMENDED RESPONSE</b><p>{alert.recommended_response}</p></div></section><footer><button onClick={()=>action('Investigating')}><Icons.Check size={14}/>ACKNOWLEDGE</button><button onClick={()=>action('Investigating')} className="active"><Icons.ScanSearch size={14}/>INVESTIGATE</button><button onClick={()=>prepareContainment(alert)} className="contain"><Icons.ShieldBan size={14}/>PREVIEW RESPONSE</button><button onClick={()=>action('Investigating')}><Icons.ArrowUpRight size={14}/>ESCALATE</button><button onClick={()=>action('Resolved')}><Icons.CircleCheck size={14}/>RESOLVE</button></footer></aside></div>
 }
 function CaseFact({label,value}){return <div><small>{label}</small><b>{value}</b></div>}
 
@@ -164,11 +184,45 @@ function EventConsole({data}){
   const [filter,setFilter]=useState('ALL'); const [search,setSearch]=useState('');
   const eventTypes={AUTH:'Authentication',NETWORK:'Network',ENDPOINT:'Endpoint',FIREWALL:'Firewall',VPN:'VPN',MALWARE:'Malware'};
   const rows=data.events.filter(event=>(filter==='ALL'||event.event_type===eventTypes[filter])&&(!search||Object.values(event).join(' ').toLowerCase().includes(search.toLowerCase())));
-  return <div className="console-page"><PageTitle overline="RAW TELEMETRY" title="Event console" text="Normalized security events from all monitored sources." count={`${rows.length} RECORDS`}/><div className="console-toolbar"><div>{['ALL','AUTH','NETWORK','ENDPOINT','FIREWALL','VPN','MALWARE'].map(value=><button className={filter===value?'active':''} onClick={()=>setFilter(value)} key={value}>{value}</button>)}</div><label><span>$</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="filter telemetry"/></label><button className="pause"><Icons.Pause size={12}/> PAUSE STREAM</button></div><section className="terminal-console"><header><span>sentineliq@collector-01</span><span>channel=security-events</span><span className="connected"><i/>CONNECTED</span></header><div className="log-lines">{rows.slice(0,60).map(event=><div className="log-entry" key={event.id}><span className="log-index">{String(event.id).padStart(4,'0')}</span><time>[{timeOnly(event.timestamp)}]</time><b className={codeFor(event).toLowerCase()}>{codeFor(event)}_{event.description.toLowerCase().includes('failed')?'FAIL':'EVENT'}</b><span>src=<em>{event.source_ip}</em></span><span>user=<em>{event.username}</em></span><span>host=<em>{event.host}</em></span><span>severity=<em style={{color:SEVERITY[event.severity]}}>{event.severity.toUpperCase()}</em></span><p>{event.description}</p></div>)}</div><footer><span>Showing {Math.min(rows.length,60)} / {rows.length}</span><span>Buffer healthy · latency 34ms</span></footer></section></div>}
+  return <div className="console-page"><PageTitle overline="RAW TELEMETRY" title="Event console" text="Normalized security events from all monitored sources." count={`${rows.length} RECORDS`}/><div className="console-toolbar"><div>{['ALL','AUTH','NETWORK','ENDPOINT','FIREWALL','VPN','MALWARE'].map(value=><button className={filter===value?'active':''} onClick={()=>setFilter(value)} key={value}>{value}</button>)}</div><label><span>$</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="filter telemetry"/></label><button className="pause"><Icons.Pause size={12}/> PAUSE STREAM</button></div><section className="terminal-console"><header><span>psv-guardrail@collector-01</span><span>channel=security-events</span><span className="connected"><i/>CONNECTED</span></header><div className="log-lines">{rows.slice(0,60).map(event=><div className="log-entry" key={event.id}><span className="log-index">{String(event.id).padStart(4,'0')}</span><time>[{timeOnly(event.timestamp)}]</time><b className={codeFor(event).toLowerCase()}>{codeFor(event)}_{event.description.toLowerCase().includes('failed')?'FAIL':'EVENT'}</b><span>src=<em>{event.source_ip}</em></span><span>user=<em>{event.username}</em></span><span>host=<em>{event.host}</em></span><span>severity=<em style={{color:SEVERITY[event.severity]}}>{event.severity.toUpperCase()}</em></span><p>{event.description}</p></div>)}</div><footer><span>Showing {Math.min(rows.length,60)} / {rows.length}</span><span>Buffer healthy · latency 34ms</span></footer></section></div>}
 
 function NetworkWorkspace({data,selectedNode,inspectNode}){const node=selectedNode||NODES[4];return <div className="mode-page network-page"><PageTitle overline="NETWORK OBSERVABILITY" title="Connection topology" text="Inspect simulated traffic paths, boundaries, and targeted assets." count="LIVE MAP"/><div className="network-layout"><section className="network-canvas zone"><ThreatTopology data={data} onNode={inspectNode} large/></section><aside className="node-inspector zone"><ZoneHead eyebrow="SELECTED NODE" title={node.label} status={node.type==='critical'?'AT RISK':'MONITORED'}/><div className={`node-orb ${node.type}`}><Icons.Server size={26}/><i/></div><dl><div><dt>ADDRESS</dt><dd>{node.sub}</dd></div><div><dt>RISK SCORE</dt><dd>{node.type==='critical'?'92 / 100':'58 / 100'}</dd></div><div><dt>OPEN ALERTS</dt><dd>{node.type==='critical'?'04':'02'}</dd></div><div><dt>LAST ACTIVITY</dt><dd>12 sec ago</dd></div><div><dt>SECURITY AGENT</dt><dd>HEALTHY</dd></div></dl><div className="node-events"><b>RECENT CONNECTIONS</b>{data.network.slice(0,4).map(item=><div key={item.id}><span>{item.protocol}:{item.port}</span><small>{item.action}</small><em>{item.risk_score}</em></div>)}</div><button><Icons.ScanSearch size={14}/>INVESTIGATE ASSET</button></aside></div></div>}
 
 function AssetMatrix({data}){return <div className="mode-page"><PageTitle overline="ENDPOINT TELEMETRY" title="Asset matrix" text="Operational posture of monitored workstations and servers." count={`${data.endpoints.length} ENDPOINTS`}/><section className="asset-matrix">{data.endpoints.map(endpoint=><article key={endpoint.id} className={`asset-unit ${endpoint.status.toLowerCase()}`}><header><span><Icons.Monitor size={16}/></span><div><h3>{endpoint.hostname}</h3><small>{endpoint.ip_address}</small></div><i/></header><p>{endpoint.operating_system}</p><div><span>RISK <b style={{color:SEVERITY[endpoint.risk_level]}}>{endpoint.risk_level.toUpperCase()}</b></span><span>ALERTS <b>{String(endpoint.open_alerts).padStart(2,'0')}</b></span></div><footer><span>{endpoint.security_agent}</span><time>{shortDate(endpoint.last_seen)}</time></footer></article>)}</section></div>}
 function Intelligence({data}){return <div className="mode-page"><PageTitle overline="INDICATOR REPOSITORY" title="Threat intelligence" text="Fictional observables available for correlation and analyst context." count={`${data.intel.length} INDICATORS`}/><section className="intel-grid">{data.intel.map(item=><article key={item.id}><header><span><Icons.Crosshair size={13}/>{item.indicator_type.toUpperCase()}</span><b style={{color:SEVERITY[item.threat_level]}}>{item.threat_level.toUpperCase()}</b></header><h3>{item.indicator}</h3><div className="confidence-meter"><i style={{width:`${item.confidence}%`}}/><span>{item.confidence}% CONFIDENCE</span></div><footer><span>FIRST {shortDate(item.first_seen)}</span><span>LAST {shortDate(item.last_seen)}</span><b>{item.status}</b></footer></article>)}</section></div>}
 function Reports({data}){const stats=data.stats;return <div className="mode-page"><PageTitle overline="OPERATIONAL ANALYTICS" title="Security reports" text="Monitoring trends for this fictional portfolio environment." count="8H WINDOW"/><section className="report-strip"><div><small>RESOLUTION RATE</small><b>{data.reports.resolution_rate}%</b><span>+8% period over period</span></div><div><small>TOP CATEGORY</small><b>AUTHENTICATION</b><span>34% of observed activity</span></div><div><small>MOST TARGETED</small><b>ENG-WS-03</b><span>9 correlated detections</span></div></section><div className="report-grid"><section className="report-chart"><ZoneHead eyebrow="EVENT VOLUME" title="Telemetry velocity" status="8H"/><ResponsiveContainer width="100%" height={290}><AreaChart data={stats.events_over_time}><defs><linearGradient id="reportFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#48d9b0" stopOpacity=".32"/><stop offset="1" stopColor="#48d9b0" stopOpacity="0"/></linearGradient></defs><CartesianGrid stroke="#24372f" vertical={false}/><XAxis dataKey="time"/><YAxis/><Tooltip contentStyle={{background:'#0c1411',border:'1px solid #365045'}}/><Area dataKey="events" stroke="#4be0b7" fill="url(#reportFill)" strokeWidth={2}/></AreaChart></ResponsiveContainer></section><section className="report-chart"><ZoneHead eyebrow="AUTHENTICATION" title="Failure pattern" status="7D"/><ResponsiveContainer width="100%" height={290}><BarChart data={data.reports.auth_failures}><CartesianGrid stroke="#24372f" vertical={false}/><XAxis dataKey="day"/><YAxis/><Tooltip contentStyle={{background:'#0c1411',border:'1px solid #365045'}}/><Bar dataKey="failures" fill="#f3aa45" radius={[2,2,0,0]}/></BarChart></ResponsiveContainer></section></div></div>}
+function riskScore(alert){
+  const base={Critical:45,High:32,Medium:20,Low:8,Informational:3}[alert?.severity] ?? 10;
+  const status=alert?.status==='New'?12:0;
+  const behavior=/(failed|brute|malware|privilege|suspicious|unauthorized)/i.test(`${alert?.alert_type||''} ${alert?.detection_reason||''}`)?15:0;
+  const source=alert?.source_ip?5:0;
+  return Math.min(100,base+status+behavior+source);
+}
+function riskReasons(alert){
+  const reasons=[`${alert?.severity||'Unknown'} severity contributes to the base score.`];
+  if(alert?.status==='New') reasons.push('This alert is still new and has not been triaged.');
+  if(/(failed|brute|malware|privilege|suspicious|unauthorized)/i.test(`${alert?.alert_type||''} ${alert?.detection_reason||''}`)) reasons.push('Detection text contains a higher-risk behavior indicator.');
+  if(alert?.source_ip) reasons.push('A source address is available for investigation.');
+  return reasons;
+}
+function ResponsePreview({alert,complete,ledger,onRun,onClose}){
+  return <div className="drawer-backdrop" onMouseDown={onClose}>
+    <section className="response-preview" role="dialog" aria-modal="true" aria-labelledby="response-preview-title" onMouseDown={e=>e.stopPropagation()}>
+      <header><span className="response-icon"><Icons.ShieldCheck size={22}/></span><button onClick={onClose} aria-label="Close preview"><Icons.X size={18}/></button></header>
+      <small className="response-eyebrow">PSV GUARDRAIL / GUARDED RESPONSE</small>
+      <h2 id="response-preview-title">Containment preview</h2>
+      <p>Review the proposed workflow for <b>{alert.alert_type}</b> before taking any real action.</p>
+      <div className="preview-risk"><span>EXPLAINABLE RISK</span><strong>{riskScore(alert)} / 100</strong><small>Alert ID: {alert.id} · Severity: {alert.severity}</small></div>
+      <ol className="preview-steps">
+        <li><Icons.CheckCircle2 size={16}/><span><b>Review alert context</b><small>Source: {alert.source_ip || 'Not recorded'} · Host: {alert.host || 'Not recorded'}</small></span></li>
+        <li><Icons.ClipboardCheck size={16}/><span><b>Prepare response checklist</b><small>Confirm asset ownership, scope, and recovery path.</small></span></li>
+        <li><Icons.LockKeyhole size={16}/><span><b>Require authorized approval</b><small>No firewall or process actions are connected to this preview.</small></span></li>
+      </ol>
+      {complete && <div className="dryrun-result"><Icons.CheckCircle2 size={17}/><span><b>Dry run recorded</b><small>No system commands executed; no host configuration changed.</small></span></div>}
+      <button className="preview-primary" onClick={complete?onClose:onRun}>{complete?'CLOSE PREVIEW':'RUN SAFE DRY RUN'} <Icons.ArrowRight size={15}/></button>
+      <p className="preview-disclaimer">Demo ledger is held in browser memory and clears when the page is refreshed. This is not a persistent audit log.</p>
+      {ledger.length>0 && <section className="preview-ledger"><b>RECENT DRY RUNS · THIS SESSION</b>{ledger.slice(0,3).map(item=><p key={item.id}>#{item.alertId} · {item.alertType} · {new Date(item.timestamp).toLocaleTimeString()}</p>)}</section>}
+    </section>
+  </div>
+}
 function PageTitle({overline,title,text,count}){return <header className="page-title"><div><small>{overline}</small><h1>{title}</h1><p>{text}</p></div><span><i/>{count}</span></header>}
