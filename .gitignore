@@ -30,3 +30,13 @@ Thumbs.db
 
 # Local upgrade backups
 *.psv-backup
+
+# Local backups and runtime data
+*.before-production
+*.psv-backup
+*.db
+*.sqlite
+*.sqlite3
+.env
+.env.*
+!.env.example
