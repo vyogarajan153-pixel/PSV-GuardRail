@@ -3,7 +3,7 @@ import * as Icons from 'lucide-react';
 import {Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis} from 'recharts';
 import './command-center-v2.css';
 
-const API = 'http://127.0.0.1:8000/api';
+const API = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
 const MODES = [
   ['COMMAND', 'Command', Icons.RadioTower],
   ['ALERT QUEUE', 'Alerts', Icons.ShieldAlert],
