@@ -28,10 +28,10 @@
 @media(max-width:1180px){.status-metric:nth-child(3){display:none}.command-grid{grid-template-columns:245px minmax(460px,1fr) 285px}.mode-list button{padding:0 9px}.mode-list button span{display:none}.asset-matrix{grid-template-columns:repeat(3,1fr)}}@media(max-width:900px){.status-bar{padding:0 10px}.cc-brand{width:180px}.ops-state,.status-metric:nth-child(1),.status-metric:nth-child(3),.data-class{display:none}.analyst-chip{width:165px}.mode-switcher{padding:0 10px}.mode-list{width:100%}.mode-list button{flex:1}.cc-stage{padding:10px}.command-grid{height:auto;display:grid;grid-template-columns:1fr}.activity-rail,.threat-rail{min-height:520px}.threat-workspace{min-height:650px;grid-row:1}.incident-board{grid-template-columns:repeat(2,1fr)}.asset-matrix{grid-template-columns:repeat(2,1fr)}.intel-grid{grid-template-columns:repeat(2,1fr)}.queue-row{grid-template-columns:3px 70px 1fr 120px}.queue-route,.queue-context{display:none}}@media(max-width:600px){.status-bar{height:58px}.cc-brand{width:auto;flex:1;border:0}.ops-state,.status-metrics,.analyst-chip div,.analyst-chip svg{display:none}.analyst-chip{width:45px;padding:0}.mode-switcher{overflow:auto}.cc-stage{min-height:calc(100vh - 103px)}.mode-list{min-width:480px}.page-title>span{display:none}.incident-board,.asset-matrix,.intel-grid{grid-template-columns:1fr}.network-layout{height:auto;grid-template-columns:1fr}.network-canvas{height:520px}.node-inspector{min-height:500px}.severity-tabs button{min-width:55px}.severity-tabs button span{display:none}.queue-toolbar label{width:155px}.queue-row{grid-template-columns:3px 58px 1fr 95px}.queue-row>button{font-size:0}.queue-row>button svg{display:block}.report-grid{grid-template-columns:1fr}.investigation-drawer{width:100%}}
 
 
-/* PSV GuardRail identity and explainable-response additions */
-:root { --psv-amber: #d97706; }
-.cc-brand .psv-wordmark { letter-spacing: .045em; }
-.cc-brand .psv-wordmark span { color: var(--psv-amber); }
+/* GR GuardRail identity and explainable-response additions */
+:root { --gr-amber: #d97706; }
+.cc-brand .gr-wordmark { letter-spacing: .045em; }
+.cc-brand .gr-wordmark span { color: var(--gr-amber); }
 .risk-assessment { display:grid; grid-template-columns:minmax(125px,.7fr) minmax(0,2fr); gap:18px; padding:16px; margin:14px 0; border:1px solid #4b3820; background:rgba(217,119,6,.055); }
 .risk-score small,.risk-reasons> b { display:block; font-size:10px; letter-spacing:.12em; color:#d9a45d; }
 .risk-score strong { display:block; font-size:32px; margin:5px 0; color:#f4b34f; }

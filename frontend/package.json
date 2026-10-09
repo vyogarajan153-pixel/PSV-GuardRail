@@ -1,5 +1,5 @@
 {
-  "name": "psv-guardrail-frontend",
+  "name": "gr-guardrail-frontend",
   "private": true,
   "version": "1.0.0",
   "type": "module",

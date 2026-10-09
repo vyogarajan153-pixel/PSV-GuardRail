@@ -29,11 +29,11 @@ build/
 Thumbs.db
 
 # Local upgrade backups
-*.psv-backup
+*.gr-backup
 
 # Local backups and runtime data
 *.before-production
-*.psv-backup
+*.gr-backup
 *.db
 *.sqlite
 *.sqlite3
